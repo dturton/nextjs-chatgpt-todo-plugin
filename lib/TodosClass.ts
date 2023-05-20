@@ -1,7 +1,7 @@
 import Keyv from "keyv";
 import KeyvRedis from "@keyv/redis";
 
-const redis = new KeyvRedis("redis://@localhost:6379");
+const redis = new KeyvRedis(process.env.KV_URL!);
 interface Todo {
   [key: string]: string;
 }
