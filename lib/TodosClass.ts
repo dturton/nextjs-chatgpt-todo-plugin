@@ -1,22 +1,41 @@
+import Keyv from "keyv";
+import KeyvRedis from "@keyv/redis";
+
+const redis = new KeyvRedis("redis://@localhost:6379");
 interface Todo {
-  [key: string]: string
+  [key: string]: string;
 }
-type TodosType = Todo[]
+type TodosType = Todo[];
 
 class TodosClass {
-  todos: TodosType = []
+  todos: TodosType = [];
+  keyv: Keyv<TodosType, Record<string, unknown>>;
+
+  constructor() {
+    this.keyv = new Keyv({ store: redis });
+    this.keyv.on("error", (err) =>
+      console.error("Keyv connection error:", err)
+    );
+    this.keyv.on("ready", () => console.log("Keyv is ready!"));
+    this.keyv.on("connectionError", (err) =>
+      console.error("Keyv connection error:", err)
+    );
+  }
+
   createTodo = (todo: Todo) => {
-    this.todos = [...this.todos, todo]
+    this.keyv.set("todos", [...this.todos, todo]);
+    this.todos = [...this.todos, todo];
+  };
+  async getTodos(): Promise<TodosType> {
+    return (await this.keyv.get("todos")) || [];
   }
-  getTodos():TodosType {
-    return this.todos
-  }
-  deleteTodo(todo:Todo):void {
-    const index = this.todos.findIndex(item => item.todo === todo.todo)
-    this.todos.splice(index, 1)
+  deleteTodo(todo: Todo): void {
+    //delete the todo
+    this.todos = this.todos.filter((t) => t.id !== todo.id);
+    this.keyv.set("todos", this.todos);
   }
 }
 
-const Todos = new TodosClass()
+const Todos = new TodosClass();
 
-export { Todos }
+export { Todos };
